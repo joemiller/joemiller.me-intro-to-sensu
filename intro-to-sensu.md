@@ -144,7 +144,7 @@ At this point we already have the EPEL-5 repo installed on our server so we will
 
 install sensu-server, sensu-client, sensu-api
 ---------------------------------------------
-This step will actually install sensu-server, sensu-client, and sensu-api, because they all come together in one bundle. On our server we will use all 3 and our clients will only use sensu-client. Sensu-dashboard is installed separately.
+Now we are ready to install Sensu. The rpm installs sensu-server, sensu-client, and sensu-api. On our server we will use all 3 but our clients will only use sensu-client. Sensu-dashboard is installed separately.
 
 We are going to use @jeremy_carroll's (#TODO# url to twitter) recently created yum repo to install sensu via rpm. This repo contains sensu rpm's for both CentOS 5 and 6 (and RHEL5/6). It's awesome that Jeremy has taken the time to set this up and I hope we can use this as a basis for automating the building of rpms and debs for all releases of Sensu. Since this repo was setup pretty much as this blog was being written, it's possible that this repo will move to a different location in the future.
 
@@ -208,7 +208,7 @@ Let's try to start the components:
     sudo /etc/init.d/sensu-api start
     sudo /etc/init.d/sensu-client start    
 
-#TODO#
+#TODO# get this stuff working
 
 install sensu-dashboard
 -----------------------
