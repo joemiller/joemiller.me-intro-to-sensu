@@ -19,7 +19,7 @@ I'm pretty excited about Sensu and I'd like to help others get started with it a
 
 Sensu is the creation of @portertech and his colleagues at sonian.com. They have graciously open-sourced the project recently and made it available to all of us searching for a modern monitoring platform (or anyone searching for an alternative to Nagios.)
 
-Sensu is often described as the "monitoring router". Most simply put, Sensu connects "check" scripts run across many nodes with "handler" scripts. Checks are used, for example, to determine if Apache is up or down. Checks can also be used to collect metrics such as MySQL statistics. The output of checks is routed to one or more handlers. Handlers determine what to do with the results of checks. Handlers currently exist for sending alerts to Pagerduty, IRC, Twitter, etc. Handlers can also feed metrics into Graphite, Librato, etc. Writing checks and handlers is quite simple and can be done in any language.
+Sensu is often described as the "monitoring router". Most simply put, Sensu connects "check" scripts run across many nodes with "handler" scripts run on one or more Sensu servers. Checks are used, for example, to determine if Apache is up or down. Checks can also be used to collect metrics such as MySQL statistics. The output of checks is routed to one or more handlers. Handlers determine what to do with the results of checks. Handlers currently exist for sending alerts to Pagerduty, IRC, Twitter, etc. Handlers can also feed metrics into Graphite, Librato, etc. Writing checks and handlers is quite simple and can be done in any language.
 
 Key points and facts:
 
