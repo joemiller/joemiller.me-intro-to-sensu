@@ -24,7 +24,7 @@ Sensu is often described as the "monitoring router". Most simply put, Sensu conn
 Key points and facts:
 
 - Ruby 1.8.7+, RabbitMQ, Redis
-- Excellent test coverage (#TODO# url to travis-ci)
+- Excellent test coverage (<TODO# url to travis-ci)
 - Strong reliance on message-passing architecture. Messages are JSON objects.
 - Re-use existing Nagios plugins
 - Plugins can be written in any language
@@ -58,7 +58,7 @@ Installing
 ==========
 As you start to explore Sensu you will find that it was built from the start to be used in conjunction with a CM tool such as Chef or Puppet. However, for the purposes of this article I will walk through a simple manual install and config. 
 
-You will probably want to use Sensu with Chef or Puppet really soon after you get bootstrapped (of course you're already using a modern CM tool in your infrastructure anyway, right?) There are good Chef (#TODO# url) and Puppet (#TODO# url) recipes in the github repos that can help you get going fairly quickly. There are also a few community members working on improving these pieces so should get even better over time.
+You will probably want to use Sensu with Chef or Puppet really soon after you get bootstrapped (of course you're already using a modern CM tool in your infrastructure anyway, right?) There are good Chef (<TODO# url) and Puppet (<TODO# url) recipes in the github repos that can help you get going fairly quickly. There are also a few community members working on improving these pieces so should get even better over time.
 
 Additionally, the original dev platform for Sensu was Ubuntu but work has been done to help make it a little more CentOS/RHEL-friendly. I'm going to use CentOS-5 in this article just because I'm more familiar with this platform than the debian/ubuntu family. In any case, it shouldn't matter too much because the purpose of this article is to show you Sensu.
 
@@ -89,7 +89,7 @@ Install RabbitMQ
     sudo rpm --import http://www.rabbitmq.com/rabbitmq-signing-key-public.asc
     sudo rpm -Uvh http://www.rabbitmq.com/releases/rabbitmq-server/v2.7.1/rabbitmq-server-2.7.1-1.noarch.rpm
 
-We need to make some SSL certs for our rabbitmq server and the sensu clients. I put a simple script up on github (#TODO# url) to help with this. It's fairly simple and you'll want to change a few things in the `openssl.cnf` to tweak to your organization if you use this in production. The script will generate a few files that we'll need throughout the guide, so keep them nearby.
+We need to make some SSL certs for our rabbitmq server and the sensu clients. I put a simple script up on github (<TODO# url) to help with this. It's fairly simple and you'll want to change a few things in the `openssl.cnf` to tweak to your organization if you use this in production. The script will generate a few files that we'll need throughout the guide, so keep them nearby.
 
     sudo yum install git
     git clone git://github.com/joemiller/joemiller.me-intro-to-sensu.git
@@ -146,7 +146,7 @@ install sensu-server, sensu-client, sensu-api
 ---------------------------------------------
 Now we are ready to install Sensu. The rpm installs sensu-server, sensu-client, and sensu-api. On our server we will use all 3 but our clients will only use sensu-client. Sensu-dashboard is installed separately.
 
-We are going to use @jeremy_carroll's (#TODO# url to twitter) recently created yum repo to install sensu via rpm. This repo contains sensu rpm's for both CentOS 5 and 6 (and RHEL5/6). It's awesome that Jeremy has taken the time to set this up and I hope we can use this as a basis for automating the building of rpms and debs for all releases of Sensu. Since this repo was setup pretty much as this blog was being written, it's possible that this repo will move to a different location in the future.
+We are going to use @jeremy_carroll's (<TODO# url to twitter) recently created yum repo to install sensu via rpm. This repo contains sensu rpm's for both CentOS 5 and 6 (and RHEL5/6). It's awesome that Jeremy has taken the time to set this up and I hope we can use this as a basis for automating the building of rpms and debs for all releases of Sensu. Since this repo was setup pretty much as this blog was being written, it's possible that this repo will move to a different location in the future.
 
     sudo rpm -Uvh http://yum.carrollops.com/el/5/sensu-release-6-1.noarch.rpm
 
@@ -208,11 +208,11 @@ Let's try to start the components:
     sudo /etc/init.d/sensu-api start
     sudo /etc/init.d/sensu-client start    
 
-#TODO# get this stuff working
+<TODO# get this stuff working
 
 install sensu-dashboard
 -----------------------
-#TODO# install dashboard, configure it, set it to startup, start it, etc
+<TODO# install dashboard, configure it, set it to startup, start it, etc
 
 
 installing a sensu client node
