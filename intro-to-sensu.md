@@ -4,12 +4,20 @@ notes
 - use chef ruby 1.8.7 rpm.
 - use rabbitmq ssl certs
 
+TODO
+----
+- update all the <TODO sections below
+- update to use jcarroll's redis 2.4 rpm
+- 
 
 
 ----------------
 
 Intro
 =====
+
+Before I even get started, I owe a huge thanks to @jeremy_carroll (<TODO# url to twitter + jcarroll's blog) for the many hours of work he put into building RPM's for Sensu. His hard work will save many folks quite a bit of time.
+
 In this article I will give a brief overview of a new monitoring tool called Sensu, how to install it, and then show you how to create your first Sensu check. This should lay the groundwork for future articles with more examples on how to utilize Sensu in your infrastructure.
 
 What is Sensu?
@@ -17,7 +25,7 @@ What is Sensu?
 http://www.sonian.com/cloud-tools/cloud-monitoring-sensu/
 I'm pretty excited about Sensu and I'd like to help others get started with it as well. After observing the frequent misconceptions and questions from new visitors to #sensu on Freenode I think perhaps the best way to do that isto  write a blog article (or two) in a tutorial style to help folks get started. If you still have questions after reading this, feel free to come by #sensu on Freenode. There are no Sensu mailing lists at this time.
 
-Sensu is the creation of @portertech and his colleagues at sonian.com. They have graciously open-sourced the project recently and made it available to all of us searching for a modern monitoring platform (or anyone searching for an alternative to Nagios.)
+Sensu is the creation of @portertech (<TODO, twitter url) and his colleagues at sonian.com (<TODO> url). They have graciously open-sourced the project recently and made it available to all of us searching for a modern monitoring platform (or anyone searching for an alternative to Nagios.)
 
 Sensu is often described as the "monitoring router". Most simply put, Sensu connects "check" scripts run across many nodes with "handler" scripts run on one or more Sensu servers. Checks are used, for example, to determine if Apache is up or down. Checks can also be used to collect metrics such as MySQL statistics. The output of checks is routed to one or more handlers. Handlers determine what to do with the results of checks. Handlers currently exist for sending alerts to Pagerduty, IRC, Twitter, etc. Handlers can also feed metrics into Graphite, Librato, etc. Writing checks and handlers is quite simple and can be done in any language.
 
@@ -72,7 +80,7 @@ install ruby 1.8.7
 Sensu needs ruby 1.8.7+ but CentOS-5 ships with an old Ruby 1.8.5. We will use the ruby 1.8.7 rpm's from Opscode's Chef. See here for additional details: http://wiki.opscode.com/display/chef/Installing+Chef+Client+on+CentOS#InstallingChefClientonCentOS-InstallRuby
 
     sudo wget -O /etc/yum.repos.d/aegisco.repo http://rpm.aegisco.com/aegisco/el5/aegisco.repo
-    sudo yum install ruby ruby-devel ruby-ri ruby-rdoc ruby-shadow rubygems curl
+    sudo yum install ruby ruby-devel ruby-ri ruby-rdoc ruby-shadow rubygems curl openssl-devel
 
 install rabbitmq
 ----------------
@@ -148,7 +156,7 @@ Now we are ready to install Sensu. The rpm installs sensu-server, sensu-client, 
 
 We are going to use @jeremy_carroll's (<TODO# url to twitter) recently created yum repo to install sensu via rpm. This repo contains sensu rpm's for both CentOS 5 and 6 (and RHEL5/6). It's awesome that Jeremy has taken the time to set this up and I hope we can use this as a basis for automating the building of rpms and debs for all releases of Sensu. Since this repo was setup pretty much as this blog was being written, it's possible that this repo will move to a different location in the future.
 
-    sudo rpm -Uvh http://yum.carrollops.com/el/5/sensu-release-6-1.noarch.rpm
+    sudo rpm -Uvh http://yum.carrollops.com/el/5/sensu-release.noarch.rpm
 
 We need to ignore the rubygem rpm's that come from EPEL because they will conflict with the sensu rpm's. Edit your `/etc/yum.repos.d/epel.repo` file and add the following line to the [epel] section.
 
@@ -156,16 +164,17 @@ We need to ignore the rubygem rpm's that come from EPEL because they will confli
 
 Install:
 
-    sudo yum install rubygem-sensu
-    sudo chkconfig --add sensu-server
-    sudo chkconfig --add sensu-api
-    sudo chkconfig --add sensu-client
+    sudo yum install rubygem-sensu rubygem-sensu-dashboard
+    sudo chkconfig sensu-server on
+    sudo chkconfig sensu-api on
+    sudo chkconfig sensu-client on
+    sudo chkconfig sensu-dashboard on
 
 Copy SSL client key + cert that we created earlier into `/etc/sensu/ssl`
 
     cp client_key.pem client_cert.pem  /etc/sensu/ssl/
 
-Next we need to configure sensu. For now we will create just enough config to start sensu. Later we will add checks and handlers. Sensu reads its config out of `/etc/sensu/config.json` by default and any files you place into the `/etc/sensu/conf.d` directory. Create `/etc/sensu/config.json`:
+Next we need to configure sensu by editing `/etc/sensu/config.json`. For now we will create just enough config to start sensu. Later we will add checks and handlers. Note (for later use) that Sensu will also read config snippets out of the  `/etc/sensu/conf.d` directory.
 
     {
       "rabbitmq": {
@@ -177,13 +186,6 @@ Next we need to configure sensu. For now we will create just enough config to st
         "host": "localhost",
         "user": "sensu",
         "password": "mypass",
-        "vhost": "/sensu"
-      },
-      "rabbitmq": {
-        "host": "localhost",
-        "port": 5672,
-        "user": "sensu",
-        "password": "sensu",
         "vhost": "/sensu"
       },
       "redis": {
@@ -202,17 +204,27 @@ Next we need to configure sensu. For now we will create just enough config to st
       }
     }
 
-Let's try to start the components:
+With the current set of rpm's we need to add a path to the GEM_PATH in order to find a couple of the rubygems we installed. Run the following:
+
+    echo "export GEM_PATH=\$GEM_PATH:/usr/lib64/ruby/gems/1.8" >>/etc/sysconfig/sensu-server
+    echo "export GEM_PATH=\$GEM_PATH:/usr/lib64/ruby/gems/1.8" >>/etc/sysconfig/sensu-api
+    echo "export GEM_PATH=\$GEM_PATH:/usr/lib64/ruby/gems/1.8" >>/etc/sysconfig/sensu-client 
+    echo "export GEM_PATH=\$GEM_PATH:/usr/lib64/ruby/gems/1.8" >>/etc/sysconfig/sensu-dashboard 
+
+
+Now let's try to start the Sensu components:
 
     sudo /etc/init.d/sensu-server start
     sudo /etc/init.d/sensu-api start
     sudo /etc/init.d/sensu-client start    
+    sudo /etc/init.d/sensu-dashboard start    
 
-<TODO# get this stuff working
-
-install sensu-dashboard
------------------------
-<TODO# install dashboard, configure it, set it to startup, start it, etc
+If all goes well, the 4 processes mentioned above will be running and the dashboard will be accessible on `http://<IP ADDRESS>:8080`. Log files are available in `/var/log/sensu` in case anything is wrong. eg:
+    
+    sensu    14249  0.0  3.4  92924 17648 ?        S    02:56   0:00 ruby /usr/bin/sensu-server ...
+    sensu    14404  0.0  4.1 102172 20884 ?        S    03:05   0:00 ruby /usr/bin/sensu-api ...
+    sensu    14425  0.0  3.7 104860 19292 ?        Sl   03:06   0:00 ruby /usr/bin/sensu-client ...
+    sensu    14553  0.4  7.0 140544 35932 ?        Sl   03:07   0:00 ruby /usr/bin/sensu-dashboard ...
 
 
 installing a sensu client node
