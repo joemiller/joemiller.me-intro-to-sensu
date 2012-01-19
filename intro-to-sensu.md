@@ -1,13 +1,11 @@
-notes
-----
-- setup 2 barebones centos vagrant box for writing the article (1 client, 1 server + rabbit + redis + dashboard)
-- use chef ruby 1.8.7 rpm.
-- use rabbitmq ssl certs
 
-TODO
+
+TODO before final publish
 ----
 - update all the <TODO sections below
 - update to use jcarroll's redis 2.4 rpm
+x try to cover both cent5 and cent6 in same article.. do it on a branch just in case it doesn't work out
+- fix h1's in html/wordpress
 - 
 
 
@@ -18,12 +16,15 @@ Intro
 
 Before I even get started, I owe a huge thanks to @jeremy_carroll (<TODO# url to twitter + jcarroll's blog) for the many hours of work he put into building RPM's for Sensu. His hard work will save many folks quite a bit of time.
 
-In this article I will give a brief overview of a new monitoring tool called Sensu, how to install it, and then show you how to create your first Sensu check. This should lay the groundwork for future articles with more examples on how to utilize Sensu in your infrastructure.
+http://www.sonian.com/cloud-tools/cloud-monitoring-sensu/
+I'm pretty excited about Sensu and I'd like to help others get started with it as well. After observing the frequent misconceptions and questions from new visitors to #sensu on Freenode I thought perhaps the best way to do that is to write a blog article to help folks get started. If you still have questions after reading this, feel free to come by #sensu on Freenode. There are no Sensu mailing lists at this time.
+
+In this article I will provide a brief overview of Sensu with some background, walk through a client and server install, and then I will show you how to create a simple check script. This should lay the groundwork for future articles with more examples on how to get the most value out of Sensu in your infrastructure.
+
+NOTE: This article covers installation of Sensu via RPM on CentOS-5 and CentOS-6. Debian/ubuntu and derivatives are not covered in this guide, but many of the same steps will apply. At this time there are no .deb packages for the Sensu components so you will have to install Sensu from gem (ie: `gem install sensu sensu-dashboard`). Hopefully soon we will have native .deb packages for the Sensu components.
 
 What is Sensu?
 ==============
-http://www.sonian.com/cloud-tools/cloud-monitoring-sensu/
-I'm pretty excited about Sensu and I'd like to help others get started with it as well. After observing the frequent misconceptions and questions from new visitors to #sensu on Freenode I think perhaps the best way to do that isto  write a blog article (or two) in a tutorial style to help folks get started. If you still have questions after reading this, feel free to come by #sensu on Freenode. There are no Sensu mailing lists at this time.
 
 Sensu is the creation of @portertech (<TODO, twitter url) and his colleagues at sonian.com (<TODO> url). They have graciously open-sourced the project recently and made it available to all of us searching for a modern monitoring platform (or anyone searching for an alternative to Nagios.)
 
@@ -42,54 +43,54 @@ Key points and facts:
 
 Components
 ==========
-Sensu is made up of several small components. I won't go into too much detail about each here, as their purpose will become obvious when we get started, so I'll just provide a few quick summaries:
+Sensu is made up of several small components. I won't go into too much detail about each of them here, as their purpose will become obvious when we get started, so here a few short descriptions:
 
 sensu-server
 ------------
-The server requests clients execute checks, receives check output and feeds to handlers. (As of version 0.9.2, clients can also execute checks that the server doesn't know about and the server will still process their results, more on this later.)
+The server initiates checks on clients, receives the output of the checks feeds them to handlers. (As of version 0.9.2, clients can also execute checks that the server doesn't know about and the server will still process their results, more on these 'standalone checks' in a future article.)
 
 Sensu-server relies on a Redis instance to keep persistent data. It also relies heavily (as do most sensu components) on access to rabbitmq for passing data between itself and sensu-client nodes.
 
 sensu-client
 ------------
-Run this on all of your systems that you want to monitor. Sensu-client will execute checks scripts (think `check_http`, `check_load`, etc) and return the results to sensu-server via rabbitmq.
+Run this on all of your systems that you want to monitor. Sensu-client will execute checks scripts (think `check_http`, `check_load`, etc) and return the results from these checks to sensu-server via rabbitmq.
 
 sensu-api
 ------------
-A REST API that provides access to various pieces of data maintained on the sensu-server in Redis. You will typically run this on the same server as your sensu-server or Redis instance. It is mostly used by internal sensu components at this time, so we probably won't cover it much more in this article.
+A REST API that provides access to various pieces of data maintained on the sensu-server in Redis. You will typically run this on the same server as your sensu-server or Redis instance. It is mostly used by internal sensu components at this time.
 
 sensu-dashboard
 ---------------
-A simple web GUI that shows the current state of your sensu checks and allows you to perform actions like temporarily silencing specific checks or nodes.
+A simple web GUI that shows the current state of your Sensu checks and allows you to perform actions like temporarily silencing specific checks or nodes.
 
 Installing
 ==========
-As you start to explore Sensu you will find that it was built from the start to be used in conjunction with a CM tool such as Chef or Puppet. However, for the purposes of this article I will walk through a simple manual install and config. 
+As you start to explore Sensu you will find that it was built from the start to be used in conjunction with a CM tool such as Chef or Puppet. However, for the purposes of this article I will walk through a simple manual install. 
 
-You will probably want to use Sensu with Chef or Puppet really soon after you get bootstrapped (of course you're already using a modern CM tool in your infrastructure anyway, right?) There are good Chef (<TODO# url) and Puppet (<TODO# url) recipes in the github repos that can help you get going fairly quickly. There are also a few community members working on improving these pieces so should get even better over time.
+You will probably want to use Sensu with Chef or Puppet soon after you get bootstrapped (of course you're already using a modern CM tool in your infrastructure anyway, right?) There are good Chef (<TODO# url) and Puppet (<TODO# url) recipes in the github repos that can help you get going fairly quickly. There are also a few community members working on improving these pieces so should get even better over time.
 
-Additionally, the original dev platform for Sensu was Ubuntu but work has been done to help make it a little more CentOS/RHEL-friendly. I'm going to use CentOS-5 in this article just because I'm more familiar with this platform than the debian/ubuntu family. In any case, it shouldn't matter too much because the purpose of this article is to show you Sensu.
+Additionally, the original dev platform for Sensu was Ubuntu but work has been done to help make it a little more CentOS/RHEL-friendly. I'm going to use CentOS 5 and 6 in this article just because I'm more familiar with this platform than the debian/ubuntu family. In any case, it shouldn't matter too much because the purpose of this article is to show you Sensu.
 
 We will use 2 nodes, one will be our server and the other will just be a simple client (perhaps it's your web server). To get started we'll need to install the following:
 
-Install sensu server
-====================
+Install a Sensu server node
+===========================
 
-install ruby 1.8.7
-------------------
-Sensu needs ruby 1.8.7+ but CentOS-5 ships with an old Ruby 1.8.5. We will use the ruby 1.8.7 rpm's from Opscode's Chef. See here for additional details: http://wiki.opscode.com/display/chef/Installing+Chef+Client+on+CentOS#InstallingChefClientonCentOS-InstallRuby
-
-    sudo wget -O /etc/yum.repos.d/aegisco.repo http://rpm.aegisco.com/aegisco/el5/aegisco.repo
-    sudo yum install ruby ruby-devel ruby-ri ruby-rdoc ruby-shadow rubygems curl openssl-devel
-
-install rabbitmq
+Install rabbitmq
 ----------------
 We will use the rabbit install guide from here as a reference: http://www.rabbitmq.com/install-rpm.html
 
-The EPEL-5 yum repo contains the older R12B version of Erlang which would work fine ok with rabbit except we wouldn't have access to some of the nice management plugins nor SSL. Thus, we'll be installing a newer Erlang from the `epel-erlang` repo. We still need the EPEL-5 repo for some dependencies so we will install both repos.
+(CentOS 5 only) The EPEL-5 yum repo contains the older R12B version of Erlang which would work fine ok with rabbit except we wouldn't have access to some of the nice management plugins nor SSL. Thus, we'll be installing a newer Erlang from the `epel-erlang` repo which provides R14B for cent5. We still need the EPEL-5 repo for some dependencies so we will install both repos.
 
     sudo rpm -Uvh http://download.fedora.redhat.com/pub/epel/5/i386/epel-release-5-4.noarch.rpm
     sudo wget -O /etc/yum.repos.d/epel-erlang.repo http://repos.fedorapeople.org/repos/peter/erlang/epel-erlang.repo
+    
+(CentOS 6 only) Install the EPEL-6 yum repo which ships with Erlang R14B:
+
+    sudo rpm -Uvh http://download.fedoraproject.org/pub/epel/6/i386/epel-release-6-5.noarch.rpm
+
+Install Erlang:
+
     sudo yum install erlang
     
 Install RabbitMQ
@@ -144,19 +145,37 @@ Finally, let's create a `sensu` vhost and a `sensu` user/password on our rabbit:
 
 install redis
 -------------
-At this point we already have the EPEL-5 repo installed on our server so we will install EPEL's version of Redis, even though it is fairly old at v2.0.
+At this point we already have the EPEL repo installed on our server so we will install EPEL's version of Redis. For Cent5 this will be a fairly old redis v2.0, and for Cent6 it will be v2.2. Both should work fine with Sensu.
 
     sudo yum install redis
     sudo /sbin/chkconfig redis on
     sudo /etc/init.d/redis start
 
-install sensu-server, sensu-client, sensu-api
----------------------------------------------
-Now we are ready to install Sensu. The rpm installs sensu-server, sensu-client, and sensu-api. On our server we will use all 3 but our clients will only use sensu-client. Sensu-dashboard is installed separately.
+install ruby 1.8.7
+------------------
+(CentOS 5 only) Sensu needs ruby 1.8.7+ but CentOS-5 ships with an old Ruby 1.8.5. We will use the ruby 1.8.7 rpm's from Opscode's Chef. See here for additional details: (<TODO> anchor) http://wiki.opscode.com/display/chef/Installing+Chef+Client+on+CentOS#InstallingChefClientonCentOS-InstallRuby
 
-We are going to use @jeremy_carroll's (<TODO# url to twitter) recently created yum repo to install sensu via rpm. This repo contains sensu rpm's for both CentOS 5 and 6 (and RHEL5/6). It's awesome that Jeremy has taken the time to set this up and I hope we can use this as a basis for automating the building of rpms and debs for all releases of Sensu. Since this repo was setup pretty much as this blog was being written, it's possible that this repo will move to a different location in the future.
+    sudo wget -O /etc/yum.repos.d/aegisco.repo http://rpm.aegisco.com/aegisco/el5/aegisco.repo
+    
+(CentOS 6) CentOS 6 ships with ruby 1.8.7 so we don't need any external repos.
 
-    sudo rpm -Uvh http://yum.carrollops.com/el/5/sensu-release.noarch.rpm
+Install Ruby packages;
+
+    sudo yum install ruby ruby-ri ruby-rdoc ruby-shadow rubygems curl openssl-devel
+
+Install Sensu components.
+-------------------------
+Now we are ready to install Sensu. We will install two rpms: `rubygem-sensu` and `rubygem-sensu-dashboard`. This will install four components: sensu-server, sensu-client, sensu-api, sensu-dashboard. Sensu servers use all of these and clients only use sensu-client.
+
+We are going to use @jeremy_carroll's (<TODO# url to twitter) recently created yum repo to install sensu via rpm. This repo contains sensu rpm's for both CentOS 5 and 6. It's awesome that Jeremy has taken the time to set this up and I hope we can use this as a basis for automating the building of rpms and debs for all releases of Sensu. Since this repo was setup pretty much as this blog was being written, it's possible that this repo will move to a different location in the future.
+
+(CentOS 5 only)
+
+    sudo rpm -Uvh http://yum.carrollops.com/el/5/sensu-release-1.noarch.rpm
+    
+(CentOS 6 only)
+
+    sudo rpm -Uvh http://yum.carrollops.com/el/6/sensu-release-1.noarch.rpm
 
 We need to ignore the rubygem rpm's that come from EPEL because they will conflict with the sensu rpm's. Edit your `/etc/yum.repos.d/epel.repo` file and add the following line to the [epel] section.
 
@@ -204,12 +223,20 @@ Next we need to configure sensu by editing `/etc/sensu/config.json`. For now we 
       }
     }
 
-With the current set of rpm's we need to add a path to the GEM_PATH in order to find a couple of the rubygems we installed. Run the following:
+Configure `/etc/sensu/conf.d/client.json` to match the current node:
 
-    echo "export GEM_PATH=\$GEM_PATH:/usr/lib64/ruby/gems/1.8" >>/etc/sysconfig/sensu-server
-    echo "export GEM_PATH=\$GEM_PATH:/usr/lib64/ruby/gems/1.8" >>/etc/sysconfig/sensu-api
-    echo "export GEM_PATH=\$GEM_PATH:/usr/lib64/ruby/gems/1.8" >>/etc/sysconfig/sensu-client 
-    echo "export GEM_PATH=\$GEM_PATH:/usr/lib64/ruby/gems/1.8" >>/etc/sysconfig/sensu-dashboard 
+    {
+      "client": {
+        "name": "sensu-server.dom.tld",
+        "address": "10.0.0.1",
+        "subscriptions": [ "test" ]
+      }
+    }
+
+(CentOS 5 x86_64 only) With the current set of rpm's we need to add a path to the GEM_PATH in order to find a couple of the rubygems we installed. Run the following:
+
+    echo "export GEM_PATH=\$GEM_PATH:/usr/lib64/ruby/gems/1.8" > /etc/profile.d/gem_path.sh
+    . /etc/profile.d/gem_path.sh
 
 
 Now let's try to start the Sensu components:
@@ -226,19 +253,116 @@ If all goes well, the 4 processes mentioned above will be running and the dashbo
     sensu    14425  0.0  3.7 104860 19292 ?        Sl   03:06   0:00 ruby /usr/bin/sensu-client ...
     sensu    14553  0.4  7.0 140544 35932 ?        Sl   03:07   0:00 ruby /usr/bin/sensu-dashboard ...
 
+If you see an error like the following on CentOS-5, it's likely because you're on a x86_64 platform but some ruby-libs or ruby-devel 1.8.5 rpm's from the base repo were accidentally installed, remove them.
+
+    Starting sensu-client: /usr/lib/ruby/1.8/openssl/cipher.rb:22: Cipher is not a module (TypeError)
+    	from /usr/lib/ruby/site_ruby/1.8/rubygems/custom_require.rb:36:in `gem_original_require'
+
 
 installing a sensu client node
 ==============================
 
-- install ruby 1.8.7
-- install sensu
+Install ruby 1.8.7
+------------------
+Follow the steps in the `Install ruby 1.8.7` section above.
+
+Install sensu-client
+--------------------
+Refer to the `Install Sensu components` section above. The instructions are the same with the following differences:
+
+1. Only install `rubygem-sensu` and skip `rubygem-sensu-dashboard`
+2. You will only need the `rabbitmq` section in `/etc/sensu/config.json` file. Make sure you point it to your rabbit server.
+3. Only enable and start the `sensu-client` service, ie: `chkconfig sensu-client on` and `/etc/init.d/sensu-client start`.
+
+The client will log to `/var/log/sensu/sensu-client.log`.
+
+Create a check
+==============
+Now that we've installed a Sensu server and a client, let's create a simple check so we can begin to see how the pieces fit together. We're going to write a check to determine if `crond` is running. We'll be using the `processes` check from the sensu-community-plugins(<TODO> URL to github) repo.
+    
+Most of the plugins in the sensu-community-plugins repo rely on the helper classes from the sensu-plugins gem, so let's install that first. You may need to install gcc in order to build the json gem dependency. Note that we are installing this from a gem because there is not an rpm available yet.
+
+    sudo gem install sensu-plugin --no-rdoc --no-ri
+
+Next, we're going to grab the `check-procs.rb` script directly from github and install it into `/etc/sensu/plugins`. You don't have to install checks into this directory, but it's convenient.
+
+    wget -O /etc/sensu/plugins/check-procs.rb https://raw.github.com/sonian/sensu-community-plugins/master/plugins/processes/check-procs.rb
+    chmod 755 /etc/sensu/plugins/check-procs.rb
+    
+Let's create a new json file to hold our check definition in `/etc/sensu/conf.d/check_cron.json`. Put this file on both the Sensu server and client. 
+
+(NOTE: as of sensu 0.9.2 'standalone' checks were added which only need to be configured on the client-side. We will cover standalone checks in future articles.)
+
+    {
+      "checks": {
+        "cron_check": {
+          "handler": "default",
+          "command": "/etc/sensu/plugins/check-procs.rb -p crond -C 1 ",
+          "interval": 60,
+          "subscribers": [ "webservers" ]
+        }
+      }
+    }
+
+Next, we need to tell our client node to listen to subscribe to the `webservers` queue. The Sensu server will publish a request every 60 seconds on the `webservers` queue and any client registered to this queue will execute checks that have been registered to this queue. Edit the `/etc/sensu/conf.d/client.json` file on the client:
+
+    {
+      "client": {
+        "name": "sensu-client.domain.tld",
+        "address": "127.0.0.1",
+        "subscriptions": [ "test", "webservers" ]
+      }
+    }
+
+Finally, restart sensu on the client and server nodes.
+
+After a few minutes we should see the following in the `/var/log/sensu/sensu-client.log` on the client:
+
+    I, [2012-01-18T21:17:07.561000 #12984]  INFO -- : [subscribe] -- received check request -- cron_check {"message":"[subscribe] -- received check request -- cron_check","level":"info","timestamp":"2012-01-18T21:17:07.   %6N-0700"}
+
+And on the server we should see the following in `/var/log/sensu/sensu-server.log`:
+
+    I, [2012-01-18T21:18:07.559666 #30970]  INFO -- : [publisher] -- publishing check request -- cron_check -- webservers {"message":"[publisher] -- publishing check request -- cron_check -- webservers","level":"info","timestamp":"2012-01-18T21:18:07.   %6N-0700"}
+    I, [2012-01-18T21:25:07.745012 #30970]  INFO -- : [result] -- received result -- sensu-client.domain.tld -- cron_check -- 0 -- CheckProcs OK: Found 1 matching processes; cmd /crond/
+    
+Next, let's see if we can raise an alert.
+
+    /etc/init.d/crond stop
+
+After about a minute we should see an alert on the sensu-dashboard. http://<SERVER IP>:8080
+    
+<TODO> inline insert screenshot-dashboard.png here
 
 
+Creating a handler
+====================
+Now that we have created our first check we are ready to hook it up to a handler. Out of the box Sensu ships with a 'default' handler which does nothing more than parse the JSON its fed via STDIN and spits back to STDOUT. 
 
-Writing first check
-===================
-- ...
+There is a growing list of handlers available in the sensu-community-plugins repo (<TODO> url github), including Pagerduty, IRC, Campfire, etc.
+    
+Let's create a simple handler that simply sends the raw check output to ourselves via email.
 
-Writing first handler
-=====================
-- ...
+On the server nodes let's define our 'email' handler in `/etc/sensu/conf.d/handler_email.json`. The handler type is a `pipe` to tell sensu to shell out and run the specified command. We'll cover more handler types in the future.
+
+    {
+      "handlers": {
+        "email": {
+          "type": "pipe",
+          "command": "mail -s 'sensu alert' your@address"
+        }
+      }
+    }
+
+On the sensu-server and sensu-client nodes we'll also need to update our check definition and connect it to the new handler, edit the `/etc/sensu/conf.d/check_cron.json` files and modify the "handlers" attribute:
+
+    {
+      "checks": {
+        "cron_check": {
+          "handlers": ["default", "email"],
+     ...
+
+Restart sensu-client and sensu-server on the nodes and then stop the crond daemon again. In a few minutes we should get an email from sensu with the subject "sensu alert" and a bag full of JSON data.
+
+This isn't the most useful handler, but it illustrates the concepts of checks and handlers and how they work together. At this point, we have a working sensu-client and sensu-server to start experimenting further. In the future we'll cover more examples of checks, handlers, metrics, etc.
+
+If you have further questions please visit #sensu on IRC Freenode.
