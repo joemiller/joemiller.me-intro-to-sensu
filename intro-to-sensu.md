@@ -363,6 +363,6 @@ On the sensu-server and sensu-client nodes we'll also need to update our check d
 
 Restart sensu-client and sensu-server on the nodes and then stop the crond daemon again. In a few minutes we should get an email from sensu with the subject "sensu alert" and a bag full of JSON data.
 
-This isn't the most useful handler, but it illustrates the concepts of checks and handlers and how they work together. At this point, we have a working sensu-client and sensu-server to start experimenting further. In the future we'll cover more examples of checks, handlers, metrics, etc.
+This isn't the most useful handler but it illustrates the concepts of checks and handlers and how they work together. At this point we now have a working sensu-client and sensu-server to start experimenting further. In the future we'll cover more examples of checks, handlers, metrics, etc.
 
 If you have further questions please visit #sensu on IRC Freenode.
