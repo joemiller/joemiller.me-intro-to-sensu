@@ -5,19 +5,21 @@ TODO before final publish
 x update all the <TODO sections below - [This link](http://example.net/) has no title attribute.
 - update to use jcarroll's redis 2.4 rpm
 x try to cover both cent5 and cent6 in same article.. do it on a branch just in case it doesn't work out
+
+html fixup
 - fix h1's in html/wordpress (convert h1->h2 and h2->h3)
-- 
+- fix any &gt; and &lt;'s inside <pre> and <code> blocks
+- convert <pre><code> to <pre lang="bash">
+- convert </code></pre> to </pre>
+- convert the json blocks to lang='json', and the rabbit config block to lang='erlang'
+- remove the leading <hr> if exists
 
 
 ----------------
 
-Intro
-=====
-
 Before I even get started, I owe a huge thanks to [@jeremy_carroll](http://twitter.com/jeremy_carroll) for the many hours of work he put into building RPM's for Sensu. His hard work will save many folks quite a bit of time.
 
-http://www.sonian.com/cloud-tools/cloud-monitoring-sensu/
-I'm pretty excited about Sensu and I'd like to help others get started with it as well. After observing the frequent misconceptions and questions from new visitors to #sensu on Freenode I thought perhaps the best way to do that is to write a blog article to help folks get started. If you still have questions after reading this, feel free to come by #sensu on Freenode. There are no Sensu mailing lists at this time.
+I'm pretty excited about [Sensu](http://www.sonian.com/cloud-tools/cloud-monitoring-sensu/) and I'd like to help others get started with it as well. So, after observing the frequent misconceptions and questions from new visitors to #sensu on Freenode I thought perhaps the best way to do that is to write a blog article to help folks get started. If you still have questions after reading this, feel free to come by #sensu on Freenode. There are no Sensu mailing lists at this time.
 
 In this article I will provide a brief overview of Sensu with some background, walk through a client and server install, and then I will show you how to create a simple check script. This should lay the groundwork for future articles with more examples on how to get the most value out of Sensu in your infrastructure.
 
@@ -33,7 +35,7 @@ Sensu is often described as the "monitoring router". Most simply put, Sensu conn
 Key points and facts:
 
 - Ruby 1.8.7+, RabbitMQ, Redis
-- Excellent test coverage with continuous integration via (travis-ci)[http://travis-ci.org/#!/sonian/sensu]
+- Excellent test coverage with continuous integration via [travis-ci](http://travis-ci.org/#!/sonian/sensu)
 - Strong reliance on message-passing architecture. Messages are JSON objects.
 - Re-use existing Nagios plugins
 - Plugins can be written in any language
@@ -80,12 +82,12 @@ Install rabbitmq
 ----------------
 We will use the rabbit install guide from here as a reference: http://www.rabbitmq.com/install-rpm.html
 
-(CentOS 5 only) The EPEL-5 yum repo contains the older R12B version of Erlang which would work fine ok with rabbit except we wouldn't have access to some of the nice management plugins nor SSL. Thus, we'll be installing a newer Erlang from the `epel-erlang` repo which provides R14B for cent5. We still need the EPEL-5 repo for some dependencies so we will install both repos.
+(CentOS 5 only) We need to install both the EPEL-5 and epel-erlang yum repos. The EPEL-5 yum repo contains the older R12B version of Erlang which would work fine with rabbit except we wouldn't have access to SSL nor the web management plugins. Thus, we'll be installing a newer Erlang from the `epel-erlang` repo which provides R14B for cent5.
 
     sudo rpm -Uvh http://download.fedora.redhat.com/pub/epel/5/i386/epel-release-5-4.noarch.rpm
     sudo wget -O /etc/yum.repos.d/epel-erlang.repo http://repos.fedorapeople.org/repos/peter/erlang/epel-erlang.repo
     
-(CentOS 6 only) Install the EPEL-6 yum repo which ships with Erlang R14B:
+(CentOS 6 only) Install the EPEL-6 yum repo which contains Erlang R14B:
 
     sudo rpm -Uvh http://download.fedoraproject.org/pub/epel/6/i386/epel-release-6-5.noarch.rpm
 
@@ -93,14 +95,13 @@ Install Erlang:
 
     sudo yum install erlang
     
-Install RabbitMQ
+Install RabbitMQ:
 
     sudo rpm --import http://www.rabbitmq.com/rabbitmq-signing-key-public.asc
     sudo rpm -Uvh http://www.rabbitmq.com/releases/rabbitmq-server/v2.7.1/rabbitmq-server-2.7.1-1.noarch.rpm
 
-We need to make some SSL certs for our rabbitmq server and the sensu clients. I put a simple script up on [github](https://github.com/joemiller/joemiller.me-intro-to-sensu) to help with this. It's fairly simple and you'll want to change a few things in the `openssl.cnf` to tweak to your organization if you use this in production. The script will generate a few files that we'll need throughout the guide, so keep them nearby.
+We need to make some SSL certs for our rabbitmq server and the sensu clients. I put a simple script up on [github](https://github.com/joemiller/joemiller.me-intro-to-sensu) to help with this. You'll want to change a few things in the `openssl.cnf` to for your organization if you use this in production. The script will generate a few files that we'll need throughout the guide, so keep them nearby.
 
-    sudo yum install git
     git clone git://github.com/joemiller/joemiller.me-intro-to-sensu.git
     cd joemiller.me-intro-to-sensu/
     ./ssl_certs.sh clean
@@ -135,9 +136,9 @@ Set RabbitMQ to start on boot and start it up immediately:
     sudo /sbin/chkconfig rabbitmq-server on
     sudo /etc/init.d/rabbitmq-server start
 
-Verify operation with the RabbitMQ Web UI: Username is "guest", password is "guest" - http://<IP ADDRESS>:55672. Protocol amqp should be bound to port 5672 and amqp/ssl on port 5671.
+Verify operation with the RabbitMQ Web UI: Username is "guest", password is "guest" - `http://<SENSU-SERVER>:55672`. Protocol amqp should be bound to port 5672 and amqp/ssl on port 5671.
 
-Finally, let's create a `sensu` vhost and a `sensu` user/password on our rabbit:
+Finally, let's create a `/sensu` vhost and a `sensu` user/password on our rabbit:
 
     rabbitmqctl add_vhost /sensu
     rabbitmqctl add_user sensu mypass
@@ -223,7 +224,7 @@ Next we need to configure sensu by editing `/etc/sensu/config.json`. For now we 
       }
     }
 
-Configure `/etc/sensu/conf.d/client.json` to match the current node:
+Configure `/etc/sensu/conf.d/client.json` for the current node:
 
     {
       "client": {
@@ -246,33 +247,34 @@ Now let's try to start the Sensu components:
     sudo /etc/init.d/sensu-client start    
     sudo /etc/init.d/sensu-dashboard start    
 
-If all goes well, the 4 processes mentioned above will be running and the dashboard will be accessible on `http://<IP ADDRESS>:8080`. Log files are available in `/var/log/sensu` in case anything is wrong. eg:
+If all goes well, the 4 processes mentioned above will be running and the dashboard will be accessible on `http://<SENSU SERVER>:8080`. Log files are available in `/var/log/sensu` in case anything is wrong.
     
     sensu    14249  0.0  3.4  92924 17648 ?        S    02:56   0:00 ruby /usr/bin/sensu-server ...
     sensu    14404  0.0  4.1 102172 20884 ?        S    03:05   0:00 ruby /usr/bin/sensu-api ...
     sensu    14425  0.0  3.7 104860 19292 ?        Sl   03:06   0:00 ruby /usr/bin/sensu-client ...
     sensu    14553  0.4  7.0 140544 35932 ?        Sl   03:07   0:00 ruby /usr/bin/sensu-dashboard ...
 
-If you see an error like the following on CentOS-5, it's likely because you're on a x86_64 platform but some ruby-libs or ruby-devel 1.8.5 rpm's from the base repo were accidentally installed, remove them.
+If you see an openssl error like the one below on CentOS-5, it's likely because you're on a x86_64 box but some ruby-libs or ruby-devel 1.8.5 rpm's from the base repo were accidentally installed, remove them.
 
     Starting sensu-client: /usr/lib/ruby/1.8/openssl/cipher.rb:22: Cipher is not a module (TypeError)
     	from /usr/lib/ruby/site_ruby/1.8/rubygems/custom_require.rb:36:in `gem_original_require'
 
 
-installing a sensu client node
+Installing a sensu client node
 ==============================
+Installing Sensu on a client node is similar to installing the server. We will need to install ruby, the Sensu rpm, and then configure Sensu. There are only a few small differences which are detailed below.
 
 Install ruby 1.8.7
 ------------------
-Follow the steps in the `Install ruby 1.8.7` section above.
+Follow the same steps from the `Install ruby 1.8.7` section we used to build our server.
 
 Install sensu-client
 --------------------
-Refer to the `Install Sensu components` section above. The instructions are the same with the following differences:
+Follow the steps from `Install Sensu components` section we used to build our server, with the following differences:
 
-1. Only install `rubygem-sensu` and skip `rubygem-sensu-dashboard`
-2. You will only need the `rabbitmq` section in `/etc/sensu/config.json` file. Make sure you point it to your rabbit server.
-3. Only enable and start the `sensu-client` service, ie: `chkconfig sensu-client on` and `/etc/init.d/sensu-client start`.
+- Only install `rubygem-sensu` and skip `rubygem-sensu-dashboard`
+- You will only need the `rabbitmq` section in `/etc/sensu/config.json` file. Make sure you point it to your rabbit server.
+- Only enable and start the `sensu-client` service, ie: `chkconfig sensu-client on` and `/etc/init.d/sensu-client start`.
 
 The client will log to `/var/log/sensu/sensu-client.log`.
 
@@ -329,7 +331,7 @@ Next, let's see if we can raise an alert.
 
     /etc/init.d/crond stop
 
-We should see an alert on the sensu-dashboard: http://<SERVER IP>:8080
+After about a minute we should see an alert on the sensu-dashboard: `http://<SERVER IP>:8080`
     
 TODO-- inline insert screenshot-dashboard.png here
 
