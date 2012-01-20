@@ -1,29 +1,8 @@
+Before I even get started, I owe a huge thanks to [@jeremy_carroll](http://twitter.com/jeremy_carroll) for the many hours of work he put into building RPM's for Sensu. His hard work will undoubtedly save many folks quite a bit of time.
 
-
-TODO before final publish
-----
-x update all the <TODO sections below - [This link](http://example.net/) has no title attribute.
-- update to use jcarroll's redis 2.4 rpm
-x try to cover both cent5 and cent6 in same article.. do it on a branch just in case it doesn't work out
-
-html fixup
-- fix h1's in html/wordpress (convert h1->h2 and h2->h3)
-- fix any &gt; and &lt;'s inside <pre> and <code> blocks
-- convert <pre><code> to <pre lang="bash">
-- convert </code></pre> to </pre>
-- convert the json blocks to lang='json', and the rabbit config block to lang='erlang'
-- remove the leading <hr> if exists
-
-
-----------------
-
-Before I even get started, I owe a huge thanks to [@jeremy_carroll](http://twitter.com/jeremy_carroll) for the many hours of work he put into building RPM's for Sensu. His hard work will save many folks quite a bit of time.
-
-I'm pretty excited about [Sensu](http://www.sonian.com/cloud-tools/cloud-monitoring-sensu/) and I'd like to help others get started with it as well. So, after observing the frequent misconceptions and questions from new visitors to #sensu on Freenode I thought perhaps the best way to do that is to write a blog article to help folks get started. If you still have questions after reading this, feel free to come by #sensu on Freenode. There are no Sensu mailing lists at this time.
+I'm pretty excited about [Sensu](http://www.sonian.com/cloud-tools/cloud-monitoring-sensu/), a new open source monitoring framework, and I'd like to help others get started with it as well. So, after observing the frequent misconceptions and questions from new visitors to #sensu on Freenode I thought perhaps the best way to do that is to write a blog article to help folks get started. If you still have questions after reading this, feel free to come by #sensu on Freenode. There are no Sensu mailing lists at this time.
 
 In this article I will provide a brief overview of Sensu with some background, walk through a client and server install, and then I will show you how to create a simple check script. This should lay the groundwork for future articles with more examples on how to get the most value out of Sensu in your infrastructure.
-
-NOTE: This article covers installation of Sensu via RPM on CentOS-5 and CentOS-6. Debian/ubuntu and derivatives are not covered in this guide, but many of the same steps will apply. At this time there are no .deb packages for the Sensu components so you will have to install Sensu from gem (ie: `gem install sensu sensu-dashboard`). Hopefully soon we will have native .deb packages for the Sensu components.
 
 What is Sensu?
 ==============
@@ -32,14 +11,15 @@ Sensu is the creation of [@portertech](http://twitter.com/portertech) and his co
 
 Sensu is often described as the "monitoring router". Most simply put, Sensu connects "check" scripts run across many nodes with "handler" scripts run on one or more Sensu servers. Checks are used, for example, to determine if Apache is up or down. Checks can also be used to collect metrics such as MySQL statistics. The output of checks is routed to one or more handlers. Handlers determine what to do with the results of checks. Handlers currently exist for sending alerts to Pagerduty, IRC, Twitter, etc. Handlers can also feed metrics into Graphite, Librato, etc. Writing checks and handlers is quite simple and can be done in any language.
 
-Key points and facts:
+Key details:
 
-- Ruby 1.8.7+, RabbitMQ, Redis
+- Ruby 1.8.7+ (EventMachine, Sinatra, AMQP), RabbitMQ, Redis
 - Excellent test coverage with continuous integration via [travis-ci](http://travis-ci.org/#!/sonian/sensu)
-- Strong reliance on message-passing architecture. Messages are JSON objects.
-- Re-use existing Nagios plugins
-- Plugins can be written in any language
-- Designed for use with modern configuration management systems such as Chef or Puppet
+- Messaging oriented architecture. Messages are JSON objects.
+- Ability to re-use existing Nagios plugins
+- Plugins and handlers (think notifications) can be written in any language
+- Supports sending metrics into various backends (Graphite, Librato, etc)
+- Designed with modern configuration management systems such as Chef or Puppet in mind
 - Designed for cloud environments
 - Lightweight, less than 1200 lines of code
 
@@ -63,24 +43,34 @@ A REST API that provides access to various pieces of data maintained on the sens
 
 sensu-dashboard
 ---------------
-A simple web GUI that shows the current state of your Sensu checks and allows you to perform actions like temporarily silencing specific checks or nodes.
+Web dashboard providing an overview of the current state of your Sensu infrastructure and the ability to perform actions, such as temporarily silencing alerts.
 
 Installing
 ==========
 As you start to explore Sensu you will find that it was built from the start to be used in conjunction with a CM tool such as Chef or Puppet. However, for the purposes of this article I will walk through a simple manual install. 
 
+This article covers installation of Sensu via RPM on CentOS-5 and CentOS-6. Debian/ubuntu and derivatives are not covered in this guide, but many of the same steps will apply. At this time there are no .deb packages for the Sensu components so you will have to install Sensu from gem (ie: `gem install sensu sensu-dashboard`). Hopefully soon we will have native .deb packages for the Sensu components.
+
 You will probably want to use Sensu with Chef or Puppet soon after you get bootstrapped (of course you're already using a modern CM tool in your infrastructure anyway, right?) There are good [Chef](https://github.com/sonian/sensu/tree/master/dist/chef) and [Puppet](https://github.com/sonian/sensu/tree/master/dist/puppet) recipes in the github repos that can help you get going fairly quickly. There are also a few community members working on improving these pieces so should get even better over time.
 
 Additionally, the original dev platform for Sensu was Ubuntu but work has been done to help make it a little more CentOS/RHEL-friendly. I'm going to use CentOS 5 and 6 in this article just because I'm more familiar with this platform than the debian/ubuntu family. In any case, it shouldn't matter too much because the purpose of this article is to show you Sensu.
 
-We will use 2 nodes, one will be our server and the other will just be a simple client (perhaps it's your web server). To get started we'll need to install the following:
+We will use 2 nodes, one will be our server and the other will be a simple client, with the following bits on each:
+
+Server:
+- rabbitmq
+- redis
+- sensu-server, sensu-client, sensu-api, sensu-dashboard
+
+Client:
+- sensu-client
 
 Install a Sensu server node
 ===========================
 
 Install rabbitmq
 ----------------
-We will use the rabbit install guide from here as a reference: http://www.rabbitmq.com/install-rpm.html
+We will base our approach on the rabbit install guide from here: [http://www.rabbitmq.com/install-rpm.html](http://www.rabbitmq.com/install-rpm.html)
 
 (CentOS 5 only) We need to install both the EPEL-5 and epel-erlang yum repos. The EPEL-5 yum repo contains the older R12B version of Erlang which would work fine with rabbit except we wouldn't have access to SSL nor the web management plugins. Thus, we'll be installing a newer Erlang from the `epel-erlang` repo which provides R14B for cent5.
 
