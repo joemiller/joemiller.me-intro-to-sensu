@@ -1,8 +1,8 @@
-Before we start, I owe a huge thanks to [@jeremy_carroll](http://twitter.com/jeremy_carroll) for the many hours of work he put into building RPM's for Sensu. His hard work will undoubtedly save many folks quite a bit of time.
+I'm excited about [Sensu](http://www.sonian.com/cloud-tools/cloud-monitoring-sensu/), a new open source monitoring framework, and I'd like to help others get started with it as well. So, after observing the frequent misconceptions and questions from new visitors to #sensu on Freenode I thought perhaps the best way to do that is to write a blog article to help folks get started. If you still have questions after reading this, feel free to come by #sensu on Freenode.
 
-I'm pretty excited about [Sensu](http://www.sonian.com/cloud-tools/cloud-monitoring-sensu/), a new open source monitoring framework, and I'd like to help others get started with it as well. So, after observing the frequent misconceptions and questions from new visitors to #sensu on Freenode I thought perhaps the best way to do that is to write a blog article to help folks get started. If you still have questions after reading this, feel free to come by #sensu on Freenode.
+In this article I will provide a brief overview of Sensu with some background, walk through a client and server install, and then I will show you how to add a check and a handler. This should lay the groundwork for future articles with more examples on how to get the most value out of Sensu in your infrastructure.
 
-In this article I will provide a brief overview of Sensu with some background, walk through a client and server install, and then I will show you how to create a simple check script. This should lay the groundwork for future articles with more examples on how to get the most value out of Sensu in your infrastructure.
+Before we start, I owe a huge thanks to [@jeremy_carroll](http://twitter.com/jeremy_carroll) for the many hours of work he put into building RPM's for Sensu. His work on packaging will undoubtedly save many folks quite a bit of time.
 
 What is Sensu?
 ==============
