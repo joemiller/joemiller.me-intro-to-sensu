@@ -270,7 +270,7 @@ Follow the steps from `Install Sensu components` section we used to build our se
 
 The client will log to `/var/log/sensu/sensu-client.log`.
 
-Create a check
+Add a check
 ==============
 Now that we've installed a Sensu server and a client, let's create a simple check so we can begin to see how the pieces fit together. We're going to write a check to determine if `crond` is running. We'll be using the `check-procs.rb` script from the [sensu-community-plugins](https://github.com/sonian/sensu-community-plugins) repo.
     
@@ -328,7 +328,7 @@ After about a minute we should see an alert on the sensu-dashboard: `http://<SER
 TODO-- inline insert screenshot-dashboard.png here
 
 
-Creating a handler
+Add a handler
 ====================
 Now that we have created our first check we are ready to hook it up to a handler. Out of the box Sensu ships with a 'default' handler which does nothing more than parse the JSON its fed via STDIN and spits back to STDOUT. 
 
