@@ -58,11 +58,13 @@ Additionally, the original dev platform for Sensu was Ubuntu but work has been d
 We will use 2 nodes, one will be our server and the other will be a simple client, with the following bits on each:
 
 Server:
+
 - rabbitmq
 - redis
 - sensu-server, sensu-client, sensu-api, sensu-dashboard
 
 Client:
+
 - sensu-client
 
 Install a Sensu server node
