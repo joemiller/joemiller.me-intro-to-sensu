@@ -61,7 +61,7 @@ Server:
 
 - rabbitmq
 - redis
-- sensu-server, sensu-client, sensu-api, sensu-dashboard
+- sensu-server / sensu-client / sensu-api / sensu-dashboard
 
 Client:
 
