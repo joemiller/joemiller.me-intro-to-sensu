@@ -1,6 +1,6 @@
-Before I even get started, I owe a huge thanks to [@jeremy_carroll](http://twitter.com/jeremy_carroll) for the many hours of work he put into building RPM's for Sensu. His hard work will undoubtedly save many folks quite a bit of time.
+Before we start, I owe a huge thanks to [@jeremy_carroll](http://twitter.com/jeremy_carroll) for the many hours of work he put into building RPM's for Sensu. His hard work will undoubtedly save many folks quite a bit of time.
 
-I'm pretty excited about [Sensu](http://www.sonian.com/cloud-tools/cloud-monitoring-sensu/), a new open source monitoring framework, and I'd like to help others get started with it as well. So, after observing the frequent misconceptions and questions from new visitors to #sensu on Freenode I thought perhaps the best way to do that is to write a blog article to help folks get started. If you still have questions after reading this, feel free to come by #sensu on Freenode. There are no Sensu mailing lists at this time.
+I'm pretty excited about [Sensu](http://www.sonian.com/cloud-tools/cloud-monitoring-sensu/), a new open source monitoring framework, and I'd like to help others get started with it as well. So, after observing the frequent misconceptions and questions from new visitors to #sensu on Freenode I thought perhaps the best way to do that is to write a blog article to help folks get started. If you still have questions after reading this, feel free to come by #sensu on Freenode.
 
 In this article I will provide a brief overview of Sensu with some background, walk through a client and server install, and then I will show you how to create a simple check script. This should lay the groundwork for future articles with more examples on how to get the most value out of Sensu in your infrastructure.
 
@@ -136,7 +136,7 @@ Finally, let's create a `/sensu` vhost and a `sensu` user/password on our rabbit
     rabbitmqctl add_user sensu mypass
     rabbitmqctl set_permissions -p /sensu sensu ".*" ".*" ".*"
 
-install redis
+Install redis
 -------------
 At this point we already have the EPEL repo installed on our server so we will install EPEL's version of Redis. For Cent5 this will be a fairly old redis v2.0, and for Cent6 it will be v2.2. Both should work fine with Sensu.
 
@@ -144,9 +144,9 @@ At this point we already have the EPEL repo installed on our server so we will i
     sudo /sbin/chkconfig redis on
     sudo /etc/init.d/redis start
 
-install ruby 1.8.7
+Install ruby 1.8.7
 ------------------
-(CentOS 5 only) Sensu needs ruby 1.8.7+ but CentOS-5 ships with an old Ruby 1.8.5. We will use the ruby 1.8.7 rpm's from Opscode's Chef. See [this page on the Chef wiki](http://wiki.opscode.com/display/chef/Installing+Chef+Client+on+CentOS#InstallingChefClientonCentOS-InstallRuby) for additional details.
+(CentOS 5 only) Sensu needs ruby 1.8.7+ but CentOS-5 ships with older Ruby 1.8.5. We will use the ruby 1.8.7 rpm's from Opscode's Chef. See [this page on the Chef wiki](http://wiki.opscode.com/display/chef/Installing+Chef+Client+on+CentOS#InstallingChefClientonCentOS-InstallRuby) for additional details.
 
     sudo wget -O /etc/yum.repos.d/aegisco.repo http://rpm.aegisco.com/aegisco/el5/aegisco.repo
     
