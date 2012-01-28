@@ -106,7 +106,7 @@ Configure RabbitMQ to use these SSL certs
     cp server_cert.pem /etc/rabbitmq/ssl/
     cp testca/cacert.pem /etc/rabbitmq/ssl/
     
-Create `/etc/rabbitmq/rabbitmq.conf`:
+Create `/etc/rabbitmq/rabbitmq.config`:
 
     [
       {rabbit, [
